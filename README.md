@@ -81,8 +81,8 @@ import seaborn as sns
 
 1.  Clone the repository:
     ```
-    git clone https://github.com/yourusername/cifar-cnn-classification.git
-    cd cifar-cnn-classification
+    git clone https://github.com/MohammadJavadShamloo/Cifar10Classification.git
+    cd Cifar10Classification
     ```
     
 2.  Install dependencies:    
