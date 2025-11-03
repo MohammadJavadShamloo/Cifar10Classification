@@ -59,13 +59,7 @@ The notebook also includes a discussion on accuracy differences between classes 
 
 See the notebook's import section for the full list:
 
-python
-
-CollapseWrapRun
-
-Copy
-
-```
+```python
 import torch
 import torchvision
 from torchvision import transforms
@@ -86,38 +80,17 @@ import seaborn as sns
 ## Installation
 
 1.  Clone the repository:
-    
-    text
-    
-    CollapseWrap
-    
-    Copy
-    
     ```
     git clone https://github.com/yourusername/cifar-cnn-classification.git
     cd cifar-cnn-classification
     ```
     
-2.  Install dependencies:
-    
-    text
-    
-    CollapseWrap
-    
-    Copy
-    
+2.  Install dependencies:    
     ```
     pip install torch torchvision matplotlib numpy scikit-learn seaborn tqdm
     ```
     
 3.  (Optional) Use a virtual environment:
-    
-    text
-    
-    CollapseWrap
-    
-    Copy
-    
     ```
     python -m venv env
     source env/bin/activate  # On Linux/Mac
@@ -129,13 +102,6 @@ import seaborn as sns
 ## Usage
 
 1.  Open the Jupyter notebook:
-    
-    text
-    
-    CollapseWrap
-    
-    Copy
-    
     ```
     jupyter notebook Classification.ipynb
     ```
