@@ -1,379 +1,170 @@
-# CIFAR10 Image Classification with CNN
+# CIFAR10 and CIFAR100 Image Classification with CNN and Transfer Learning
 
-## Overview
+This repository contains a Jupyter notebook (Classification.ipynb) that demonstrates image classification on the CIFAR10 dataset using a Convolutional Neural Network (CNN). It includes data loading, preprocessing, model design, training, evaluation, and in-depth analysis of the feature space. The second part extends the model via transfer learning to the CIFAR100 dataset, with modifications to the final layer, retraining, and further evaluation of generalization and features.
 
-This notebook demonstrates a comprehensive approach to image classification using Convolutional Neural Networks (CNNs) on the CIFAR10 dataset. The project is divided into two main parts:
-
-1.  **CIFAR10 Classification**: Building and training a CNN from scratch
-2.  **Transfer Learning**: Adapting the trained model for CIFAR100 dataset
+The notebook is designed for educational purposes, focusing on practical implementation and analysis of CNNs in PyTorch.
 
 ## Table of Contents
 
-1.  [Environment Setup](#environment-setup)
-2.  [Data Preparation](#data-preparation)
-3.  [Data Visualization](#data-visualization)
-4.  [Model Architecture](#model-architecture)
-5.  [Training Process](#training-process)
-6.  [Model Evaluation](#model-evaluation)
-7.  [Feature Space Analysis](#feature-space-analysis)
-8.  [Transfer Learning to CIFAR100](#transfer-learning-to-cifar100)
+*   Project Overview
+*   Dataset
+*   Features
+*   Requirements
+*   Installation
+*   Usage
+*   Results and Analysis
+*   Contributing
+*   License
 
-## Environment Setup
+## Project Overview
 
-The notebook begins by importing essential libraries:
+*   **Part 1: CIFAR10 Classification**
+    *   Load and preprocess the CIFAR10 dataset with normalization and data augmentation.
+    *   Visualize sample images from each class.
+    *   Design and train a custom CNN model.
+    *   Evaluate model performance on test data.
+    *   Analyze the feature space using KNN for nearest neighbors, clustering, and visualization of intermediate layer outputs.
+*   **Part 2: Transfer Learning to CIFAR100**
+    *   Adapt the pre-trained CIFAR10 model by modifying the final layer.
+    *   Retrain on CIFAR100 dataset.
+    *   Evaluate accuracy and analyze feature extraction, generalization, and potential issues like class imbalances.
+
+The notebook also includes a discussion on accuracy differences between classes and relates them to the model's feature space.
+
+## Dataset
+
+*   **CIFAR10**: 60,000 32x32 color images in 10 classes (e.g., plane, car, bird), with 50,000 training and 10,000 test images.
+*   **CIFAR100**: Extension with 100 classes, used for transfer learning to test model adaptability.
+*   Datasets are automatically downloaded via torchvision.datasets.CIFAR10 and CIFAR100.
+
+## Features
+
+*   Data augmentation (random horizontal flip, crop) for improved generalization.
+*   Custom CNN architecture (explained in the notebook).
+*   Training with validation split and evaluation metrics.
+*   Feature space analysis: KNN, clustering (e.g., t-SNE), and layer visualizations.
+*   Transfer learning demonstration with layer modifications.
+*   Visualization of best/worst performing classes and accuracy analysis.
+
+## Requirements
+
+*   Python 3.10+
+*   PyTorch
+*   Torchvision
+*   Matplotlib
+*   NumPy
+*   Scikit-learn (for t-SNE and KNN)
+*   Seaborn (for visualizations)
+*   tqdm (for progress bars)
+
+See the notebook's import section for the full list:
 
 python
 
-Line Wrapping
-
-Collapse
+CollapseWrapRun
 
 Copy
 
-99
-
-1
-
-2
-
-3
-
-4
-
-5
-
-6
-
-7
-
-8
-
-9
-
-10
-
-11
-
-12
-
-13
-
-14
-
-15
-
-›
-
+```
 import torch
-
 import torchvision
-
 from torchvision import transforms
-
 import matplotlib.pyplot as plt
-
 from torch import nn
-
 import torch.nn.functional as F
-
 from tqdm import tqdm
-
 from time import time
-
 import random
-
 from sklearn.manifold import TSNE
-
 import numpy as np
-
 from random import sample
-
 import math
-
 import torch.optim as optim
-
 import seaborn as sns
-
-The environment is configured to use GPU when available:
-
-python
-
-Line Wrapping
-
-Collapse
-
-Copy
-
-9
-
-1
-
-›
-
-device \= 'cuda' if torch.cuda.is\_available() else 'cpu'
-
-## Data Preparation
-
-### Dataset Loading
-
-The CIFAR10 dataset is loaded with appropriate transformations:
-
-python
-
-Line Wrapping
-
-Collapse
-
-Copy
-
-99
-
-1
-
-2
-
-3
-
-4
-
-5
-
-6
-
-7
-
-8
-
-9
-
-10
-
-11
-
-12
-
-13
-
-14
-
-15
-
-16
-
-17
-
-18
-
-›
-
-⌄
-
-⌄
-
-⌄
-
-data\_transforms \= {
-
-'train': transforms.Compose(\[
-
-transforms.RandomHorizontalFlip(),
-
-transforms.RandomCrop(32, padding\=4),
-
-transforms.ToTensor(),
-
-transforms.Normalize(
-
-mean\=\[0.4914, 0.4822, 0.4465\],
-
-std\=\[0.2023, 0.1994, 0.2010\],
-
-),
-
-\]),
-
-'test': transforms.Compose(\[
-
-transforms.ToTensor(),
-
-transforms.Normalize(
-
-mean\=\[0.4914, 0.4822, 0.4465\],
-
-std\=\[0.2023, 0.1994, 0.2010\],
-
-),
-
-\]),
-
-}
-
-### Data Splitting
-
-The training set is split into training (80%) and validation (20%) subsets:
-
-python
-
-Line Wrapping
-
-Collapse
-
-Copy
-
-9
-
-1
-
-2
-
-3
-
-›
-
-train\_size \= int(len(full\_train\_dataset) \* 0.8)
-
-valid\_size \= len(full\_train\_dataset) \- train\_size
-
-train\_dataset, validation\_dataset \= random\_split(full\_train\_dataset, \[train\_size, valid\_size\])
-
-### Data Loaders
-
-Data loaders are created for batch processing:
-
-python
-
-Line Wrapping
-
-Collapse
-
-Copy
-
-9
-
-1
-
-2
-
-3
-
-›
-
-train\_loader \= DataLoader(train\_dataset, batch\_size\=64, shuffle\=True, num\_workers\=2)
-
-validation\_loader \= DataLoader(validation\_dataset, batch\_size\=64, num\_workers\=2)
-
-test\_loader \= DataLoader(test\_dataset, batch\_size\=64, num\_workers\=2)
-
-## Data Visualization
-
-The notebook includes visualization of 5 random images from each class in CIFAR10:
-
-python
-
-Line Wrapping
-
-Collapse
-
-Copy
-
-9
-
-1
-
-2
-
-3
-
-4
-
-›
-
-⌄
-
-\# Visualization code (see notebook for implementation)
-
-plt.figure(figsize\=(15, 10))
-
-for i, cls in enumerate(classes):
-
-\# ... visualization logic
-
-## Model Architecture
-
-The notebook designs a CNN architecture specifically for CIFAR10 classification. While the exact architecture isn't shown in the provided content, it typically includes:
-
-*   Convolutional layers with ReLU activation
-*   Pooling layers for spatial reduction
-*   Batch normalization for training stability
-*   Dropout for regularization
-*   Fully connected layers for classification
-
-## Training Process
-
-The model is trained using:
-
-*   Loss function: Cross-entropy loss
-*   Optimizer: Adam or SGD (with momentum)
-*   Learning rate scheduling
-*   Early stopping based on validation performance
-
-## Model Evaluation
-
-After training, the model is evaluated on:
-
-1.  Test accuracy
-2.  Confusion matrix
-3.  Per-class performance metrics
-
-## Feature Space Analysis
-
-The notebook includes comprehensive analysis of the learned feature space:
-
-1.  **KNN Analysis**: Examining nearest neighbors in feature space
-2.  **Clustering**: Applying clustering algorithms to feature representations
-3.  **Intermediate Layer Visualization**: Visualizing activations from different layers
-
-python
-
-Line Wrapping
-
-Collapse
-
-Copy
-
-9
-
-1
-
-›
-
-\# Feature space analysis code (see notebook for implementation)
-
-## Transfer Learning to CIFAR100
-
-In the second part, the notebook demonstrates transfer learning:
-
-1.  **Model Adaptation**: Modifying the final layer for 100 classes
-2.  **Fine-tuning**: Retraining on CIFAR100 dataset
-3.  **Evaluation**: Assessing performance on the new task
-4.  **Generalization Analysis**: Examining how well features transfer
-
-## Key Features
-
-*   **Comprehensive Data Processing**: Includes normalization and augmentation
-*   **Thorough Evaluation**: Multiple metrics and visualization techniques
-*   **Feature Analysis**: Deep dive into learned representations
-*   **Transfer Learning**: Practical application to a new dataset
-*   **Visualization**: Rich visualizations throughout the process
+```
+
+## Installation
+
+1.  Clone the repository:
+    
+    text
+    
+    CollapseWrap
+    
+    Copy
+    
+    ```
+    git clone https://github.com/yourusername/cifar-cnn-classification.git
+    cd cifar-cnn-classification
+    ```
+    
+2.  Install dependencies:
+    
+    text
+    
+    CollapseWrap
+    
+    Copy
+    
+    ```
+    pip install torch torchvision matplotlib numpy scikit-learn seaborn tqdm
+    ```
+    
+3.  (Optional) Use a virtual environment:
+    
+    text
+    
+    CollapseWrap
+    
+    Copy
+    
+    ```
+    python -m venv env
+    source env/bin/activate  # On Linux/Mac
+    .\env\Scripts\activate   # On Windows
+    pip install -r requirements.txt  # Create this file with the above libraries
+    ```
+    
 
 ## Usage
 
-To run this notebook:
+1.  Open the Jupyter notebook:
+    
+    text
+    
+    CollapseWrap
+    
+    Copy
+    
+    ```
+    jupyter notebook Classification.ipynb
+    ```
+    
+2.  Run the cells sequentially:
+    *   Data loading and preprocessing.
+    *   Model definition and training.
+    *   Evaluation and visualizations.
+    *   Transfer learning section.
 
-1.  Ensure all dependencies are installed (PyTorch, torchvision, etc.)
-2.  Execute cells sequentially
-3.  Adjust hyperparameters as needed for your environment
+Note: Training requires a GPU for faster computation (set device = 'cuda' if available). The notebook includes code to check for CUDA availability.
 
-## Conclusion
+## Results and Analysis
 
-This notebook provides a complete pipeline for image classification with CNNs, from data preparation to advanced feature analysis and transfer learning. It serves as both a practical implementation and an educational resource for understanding deep learning for computer vision tasks.
+*   **CIFAR10 Accuracy**: The model achieves competitive accuracy (detailed in the notebook's evaluation section).
+*   **Class Performance**: Visualizations show top-5 best/worst performing classes (e.g., high accuracy for distinct classes like "ship" vs. lower for similar ones like "cat/dog").
+*   **Feature Space Insights**:
+    *   KNN reveals closest samples in embeddings.
+    *   Clustering (t-SNE) highlights separability.
+    *   Intermediate layer outputs visualize learned features.
+*   **Transfer Learning**: Accuracy on CIFAR100 is lower due to increased classes, but demonstrates effective fine-tuning.
+*   **Discussion**: Accuracy differences stem from class similarities (e.g., animals vs. vehicles), dataset biases, and feature space limitations. The model excels at broad distinctions but struggles with fine-grained subclasses.
+
+Refer to the notebook for plots, confusion matrices, and detailed analysis.
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests for improvements, bug fixes, or additional features.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
